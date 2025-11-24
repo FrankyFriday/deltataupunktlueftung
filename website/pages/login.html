@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login – Delta Taupunktlüftung</title>
+    <style>
+        /* Reset & Basis */
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            display: flex;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #fff;
+            max-width: 900px;
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Linke Seite - Login Form */
+        .left {
+            flex: 1;
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: #fff;
+        }
+
+        .left h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin: 0 0 8px;
+            color: #222;
+        }
+
+        .left h3 {
+            font-weight: 400;
+            color: #666;
+            margin-bottom: 40px;
+            letter-spacing: 1.2px;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 15px;
+            color: #444;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 28px;
+            border: 1.8px solid #ccc;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #ff5a5a;
+            box-shadow: 0 0 8px rgba(255, 90, 90, 0.35);
+            outline: none;
+        }
+
+        .btn {
+            background: #ff4d4d;
+            border: none;
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 18px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 6px 12px rgba(255, 77, 77, 0.45);
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #e63d3d;
+        }
+
+        .signup {
+            margin-top: 22px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+
+        .signup a {
+            color: #ff4d4d;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .signup a:hover {
+            color: #e63d3d;
+        }
+
+        /* Rechte Seite - Bilder */
+        .right {
+            flex: 1;
+            background: linear-gradient(135deg, #ff4d4d 0%, #ff7f7f 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            gap: 25px;
+            color: white;
+        }
+
+        .right img.logo {
+            max-width: 260px;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+        }
+
+        .right img.orgadata {
+            max-width: 220px;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.15));
+            margin-top: auto;
+        }
+
+        .right img {
+            max-width: 320px;
+            border-radius: 16px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            background: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 860px) {
+            .container {
+                flex-direction: column;
+                max-width: 100%;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .left, .right {
+                flex: none;
+                width: 100%;
+                padding: 40px 30px;
+            }
+            .right {
+                background: none;
+                color: #333;
+                padding-top: 0;
+                gap: 12px;
+            }
+            .right img.logo,
+            .right img.orgadata,
+            .right img {
+                max-width: 180px;
+                box-shadow: none;
+                background: none;
+                filter: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="left">
+            <h1>Willkommen zurück</h1>
+            <h3>Delta-Taupunktlüftung</h3>
+
+            <label for="username">Benutzername</label>
+            <input type="text" id="username" placeholder="Gib deinen Benutzernamen ein" autocomplete="username" />
+
+            <label for="password">Passwort</label>
+            <input type="password" id="password" placeholder="**********" autocomplete="current-password" />
+
+            <button class="btn" onclick="location.href='index.html'">Anmelden</button>
+
+            <p class="signup">
+                Noch keinen Account? <a href="register.html">Jetzt kostenlos registrieren!</a>
+            </p>
+        </div>
+
+        <div class="right">
+            <img src="assets/img/buenting.svg" class="logo" alt="Buenting Logo" />
+            <img src="assets/img/joypi.png" alt="JoyPi Koffer" />
+            <img src="assets/img/orgadata.svg" class="orgadata" alt="Orgadata" />
+        </div>
+    </div>
+
+</body>
+</html>
