@@ -117,6 +117,17 @@
             color: #e63d3d;
         }
 
+        /* Flash-Message */
+        ul.flashes {
+            list-style: none;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            background-color: #ffe6e6;
+            border: 1px solid #ff4d4d;
+            border-radius: 8px;
+            color: #cc0000;
+        }
+
         /* Rechte Seite - Bilder */
         .right {
             flex: 1;
@@ -182,26 +193,39 @@
 
     <div class="container">
         <div class="left">
+
             <h1>Willkommen zurück</h1>
             <h3>Delta-Taupunktlüftung</h3>
 
-            <label for="username">Benutzername</label>
-            <input type="text" id="username" placeholder="Gib deinen Benutzernamen ein" autocomplete="username" />
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <ul class="flashes">
+                  {% for message in messages %}
+                    <li>{{ message }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            {% endwith %}
 
-            <label for="password">Passwort</label>
-            <input type="password" id="password" placeholder="**********" autocomplete="current-password" />
+            <form method="POST" action="{{ url_for('login') }}">
+                <label for="username">Benutzername</label>
+                <input type="text" id="username" name="username" placeholder="Gib deinen Benutzernamen ein" autocomplete="username" required />
 
-            <button class="btn" onclick="location.href='index.html'">Anmelden</button>
+                <label for="password">Passwort</label>
+                <input type="password" id="password" name="password" placeholder="**********" autocomplete="current-password" required />
+
+                <button class="btn" type="submit">Anmelden</button>
+            </form>
 
             <p class="signup">
-                Noch keinen Account? <a href="register.html">Jetzt kostenlos registrieren!</a>
+                Noch keinen Account? <a href="{{ url_for('register') }}">Jetzt kostenlos registrieren!</a>
             </p>
         </div>
 
         <div class="right">
-            <img src="assets/img/buenting.svg" class="logo" alt="Buenting Logo" />
-            <img src="assets/img/joypi.png" alt="JoyPi Koffer" />
-            <img src="assets/img/orgadata.svg" class="orgadata" alt="Orgadata" />
+            <img src="{{ url_for('static', filename='img/buenting.svg') }}" class="logo" alt="Buenting Logo" />
+            <img src="{{ url_for('static', filename='img/joypi.png') }}" alt="JoyPi Koffer" />
+            <img src="{{ url_for('static', filename='img/orgadata.svg') }}" class="orgadata" alt="Orgadata" />
         </div>
     </div>
 
