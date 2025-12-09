@@ -6,8 +6,8 @@ from functools import wraps
 
 app = Flask(
     __name__,
-    template_folder="website/templates",  # Anpassung: templates liegen in website/templates
-    static_folder="website/static"        # Anpassung: statische Dateien liegen in website/static
+    template_folder="website/templates",
+    static_folder="website/static"
 )
 
 app.secret_key = "supersecretkey"
