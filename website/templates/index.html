@@ -1,39 +1,79 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Delta-Taupunktlüftung – Übersicht</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-
+<meta charset="UTF-8">
+<title>Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
-    <nav class="navbar">
-        <div class="logo">Delta-Taupunktlüftung</div>
-        <div>
-            <a href="/index">Übersicht</a>
-            <a href="/sensoren">Sensoren</a>
-            <a href="/verbindung">Verbindung</a>
-            <a href="/einstellungen">Einstellungen</a>
-            <a href=/logout>Logout</a>
-        </div>
-    </nav>
 
-    <div class="container">
-        <section>
-            <h2>Systemübersicht</h2>
-            <p>Live-Status und Übersicht der wichtigsten Daten.</p>
+<nav class="navbar">
+    <div class="logo">Delta-Taupunktlüftung</div>
+    <div>
+        <a href="/index" class="active">Übersicht</a>
+        <a href="/sensoren">Sensoren</a>
+        <a href="/logout">Logout</a>
+    </div>
+</nav>
 
-            <div class="gauge">
-                <div id="gauge_number" class="gauge-value">--%</div>
-            </div>
+<div class="container">
+    
+<section class="card weather-card">
 
-            <p class="center">Taupunkt-Effizienz</p>
-        </section>
+    <h2>🌦️ Wetter in <span id="weather_city">Leer</span></h2>
+
+    <div class="weather-box">
+        🌡️ <b id="weather_temp">--</b> °C
     </div>
 
-    <footer>&copy; 2025 Delta-Taupunktlüftung Julian Müller und Mattis Westerhoff</footer>
-    
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <div class="weather-box">
+        💨 <b id="weather_wind">--</b> km/h
+    </div>
+
+    <div class="weather-box">
+        ⏱️ <b id="weather_time">--</b>
+    </div>
+
+</section>
+
+<section class="card weather-card">
+
+    <h2>🌦️ Wetter in <span id="weather_city">Leer</span></h2>
+
+    <div class="weather-grid">
+
+        <div class="weather-box">
+            <div class="weather-icon">🌡️</div>
+            <div>
+                <div class="weather-label">Temperatur</div>
+                <div class="weather-value"><span id="weather_temp">--</span> °C</div>
+            </div>
+        </div>
+
+        <div class="weather-box">
+            <div class="weather-icon">💨</div>
+            <div>
+                <div class="weather-label">Wind</div>
+                <div class="weather-value"><span id="weather_wind">--</span> km/h</div>
+            </div>
+        </div>
+
+        <div class="weather-box">
+            <div class="weather-icon">⏱️</div>
+            <div>
+                <div class="weather-label">Zeit</div>
+                <div class="weather-value"><span id="weather_time">--</span></div>
+            </div>
+        </div>
+
+    </div>
+
+</section>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
 </body>
-</html>
+</html>s

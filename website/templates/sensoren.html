@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sensorwerte</title>
+    <title>Sensor Dashboard</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
 
 <nav class="navbar">
@@ -13,25 +15,48 @@
     <div>
         <a href="/index">Übersicht</a>
         <a href="/sensoren" class="active">Sensoren</a>
-        <a href="/verbindung">Verbindung</a>
-        <a href="/einstellungen">Einstellungen</a>
-        <a href=/logout>Logout</a>
+        <a href="/logout">Logout</a>
     </div>
 </nav>
 
 <div class="container">
+
+    <!-- SENSOR TABLE -->
     <section class="card">
-        <h2>Sensorwerte</h2>
-        <ul>
-            <li>Temperatur Innen: <span id="temp_innen">--</span> °C</li>
-            <li>Temperatur Außen: <span id="temp_aussen">--</span> °C</li>
-            <li>Feuchtigkeit Innen: <span id="hum_innen">--</span> %</li>
-            <li>Feuchtigkeit Außen: <span id="hum_aussen">--</span> %</li>
-        </ul>
+        <h2>📡 Sensorwerte</h2>
+
+        <table class="sensor-table">
+            <thead>
+                <tr>
+                    <th>Zeit</th>
+                    <th>Temp Innen</th>
+                    <th>Temp Außen</th>
+                    <th>Feuchte Innen</th>
+                    <th>Feuchte Außen</th>
+                </tr>
+            </thead>
+
+            <tbody id="sensor_table_body">
+                <tr><td colspan="5">Lade Daten...</td></tr>
+            </tbody>
+        </table>
     </section>
+
+    <section class="card">
+        <h2>🌀 Lüfter Status</h2>
+
+        <div class="fan-grid">
+            <div>State: <b id="fan_state">--</b></div>
+            <div>Mode: <b id="fan_mode">--</b></div>
+            <div>Speed: <b id="fan_speed">--</b>%</div>
+        </div>
+    </section>
+
 </div>
 
 <footer>© 2025 Delta-Taupunktlüftung</footer>
+
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
 </body>
 </html>

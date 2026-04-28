@@ -1,11 +1,9 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+import requests
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import mysql.connector
 from mysql.connector import Error
 from functools import wraps
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 
@@ -26,13 +24,8 @@ DB_CONFIG = {
     "database": os.getenv("DB_NAME")
 }
 
-SMTP_SERVER = os.getenv("SMTP_SERVER")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USERNAME = os.getenv("SMTP_USERNAME")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-FROM_EMAIL = SMTP_USERNAME
 
-
+# ---------------- DB INIT ----------------
 def init_db():
     try:
         db = mysql.connector.connect(
@@ -48,6 +41,7 @@ def init_db():
 
         db = mysql.connector.connect(**DB_CONFIG)
         cursor = db.cursor()
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -55,81 +49,65 @@ def init_db():
                 password VARCHAR(255) NOT NULL
             )
         """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sensorwerte (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                temp_innen FLOAT,
+                temp_aussen FLOAT,
+                hum_innen FLOAT,
+                hum_aussen FLOAT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         db.commit()
         cursor.close()
         db.close()
-        print("Datenbank und Tabelle initiiert.")
+
+        print("DB bereit")
+
     except Error as e:
-        print(f"Database error: {e}")
+        print("DB Error:", e)
 
 
 init_db()
 
 
+# ---------------- DB CONNECTION ----------------
 def get_db():
     try:
         return mysql.connector.connect(**DB_CONFIG)
     except Error as e:
-        print(f"DB connection error: {e}")
+        print("DB error:", e)
         return None
 
 
+# ---------------- LOGIN REQUIRED ----------------
 def login_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if "user_id" not in session:
-            flash("Bitte zuerst einloggen!")
             return redirect(url_for("login"))
         return func(*args, **kwargs)
     return wrapper
 
 
-def send_registration_email(to_email, username):
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["From"] = FROM_EMAIL
-        msg["To"] = to_email
-        msg["Subject"] = "Willkommen bei Delta-Taupunktlüftung!"
+# ---------------- FAN STATUS (RAM STORAGE) ----------------
+fan_status = {
+    "state": "off",
+    "mode": "manual",
+    "speed": 0
+}
 
-        text = f"""Hallo {username},
-
-vielen Dank für deine Registrierung bei Delta-Taupunktlüftung!
-
-Wir freuen uns, dich an Bord zu haben.
-
-Viele Grüße,
-Dein Delta-Taupunktlüftung Team
-"""
-
-        html = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height:1.5; color:#333;">
-            <h2 style="color:#4CAF50;">Willkommen bei Delta-Taupunktlüftung, {username}!</h2>
-            <p>Vielen Dank für deine Registrierung bei <strong>Delta-Taupunktlüftung</strong>.</p>
-            <p>Wir freuen uns, dich an Bord zu haben.</p>
-            <br>
-            <p>Viele Grüße,<br><em>Dein Delta-Taupunktlüftung Team</em></p>
-        </body>
-        </html>
-        """
-
-        part1 = MIMEText(text, "plain")
-        part2 = MIMEText(html, "html")
-
-        msg.attach(part1)
-        msg.attach(part2)
-
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USERNAME, SMTP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        print(f"Bestätigungs-E-Mail an {to_email} gesendet.")
-    except Exception as e:
-        print(f"Fehler beim Senden der E-Mail: {e}")
+weather_location = {
+    "lat": 53.2311,
+    "lon": 7.4653,
+    "name": "Leer (Ostfriesland)"
+}
 
 
-
+# ---------------- AUTH ----------------
 @app.route("/")
 def root():
     return redirect(url_for("login"))
@@ -142,26 +120,17 @@ def login():
         password = request.form["password"]
 
         db = get_db()
-        if db is None:
-            flash("Datenbankverbindung fehlgeschlagen.")
-            return redirect(url_for("login"))
-
         cursor = db.cursor()
         cursor.execute("SELECT id, password FROM users WHERE username=%s", (username,))
         user = cursor.fetchone()
         cursor.close()
         db.close()
 
-        if user:
-            user_id, hashed_password = user
-            if check_password_hash(hashed_password, password):
-                session["user_id"] = user_id
-                return redirect(url_for("index"))
-            else:
-                flash("Falscher Benutzername oder Passwort!")
-        else:
-            flash("Falscher Benutzername oder Passwort!")
+        if user and check_password_hash(user[1], password):
+            session["user_id"] = user[0]
+            return redirect(url_for("index"))
 
+        flash("Login fehlgeschlagen")
         return redirect(url_for("login"))
 
     return render_template("login.html")
@@ -170,44 +139,29 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
-    flash("Erfolgreich ausgeloggt.")
     return redirect(url_for("login"))
 
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "")
-
-        if not username or not password or not email:
-            flash("Bitte alle Felder ausfüllen!")
-            return redirect(url_for("register"))
+        username = request.form["username"]
+        password = request.form["password"]
 
         db = get_db()
-        if db is None:
-            flash("Datenbankverbindung fehlgeschlagen.")
-            return redirect(url_for("register"))
-
         cursor = db.cursor()
+
         try:
-            hashed_password = generate_password_hash(password)
-            cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_password))
+            cursor.execute(
+                "INSERT INTO users (username, password) VALUES (%s, %s)",
+                (username, generate_password_hash(password))
+            )
             db.commit()
-
-            send_registration_email(email, username)
-
-            flash("Registrierung erfolgreich! Eine Bestätigungs-E-Mail wurde versendet.")
             return redirect(url_for("login"))
 
-        except mysql.connector.IntegrityError:
-            flash("Benutzername existiert bereits!")
-            return redirect(url_for("register"))
-        except Error as e:
-            flash("Fehler bei der Registrierung.")
-            print(f"Registration error: {e}")
-            return redirect(url_for("register"))
+        except Error:
+            flash("Fehler bei Registrierung")
+
         finally:
             cursor.close()
             db.close()
@@ -215,16 +169,11 @@ def register():
     return render_template("register.html")
 
 
+# ---------------- PAGES ----------------
 @app.route("/index")
 @login_required
 def index():
     return render_template("index.html")
-
-
-@app.route("/einstellungen")
-@login_required
-def einstellungen():
-    return render_template("einstellungen.html")
 
 
 @app.route("/sensoren")
@@ -233,11 +182,78 @@ def sensoren():
     return render_template("sensoren.html")
 
 
+@app.route("/einstellungen")
+@login_required
+def einstellungen():
+    return render_template("einstellungen.html")
+
+
 @app.route("/verbindung")
 @login_required
 def verbindung():
     return render_template("verbindung.html")
 
+@app.route("/api/weather")
+@login_required
+def api_weather():
+    global weather_location
 
+    url = (
+        f"https://api.open-meteo.com/v1/forecast"
+        f"?latitude={weather_location['lat']}"
+        f"&longitude={weather_location['lon']}"
+        f"&current_weather=true"
+    )
+
+    r = requests.get(url).json()
+    w = r.get("current_weather", {})
+
+    return jsonify({
+        "city": weather_location["name"],
+        "temperature": w.get("temperature"),
+        "windspeed": w.get("windspeed"),
+        "time": w.get("time")
+    })
+
+
+# ---------------- SENSOR API ----------------
+@app.route("/api/sensoren")
+@login_required
+def api_sensoren():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT temp_innen, temp_aussen, hum_innen, hum_aussen, timestamp
+        FROM sensorwerte
+        ORDER BY timestamp DESC
+        LIMIT 20
+    """)
+
+    data = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return jsonify(data)
+
+@app.route("/api/fan", methods=["GET", "POST"])
+@login_required
+def api_fan():
+    global fan_status
+
+    if request.method == "POST":
+        data = request.json
+
+        fan_status["state"] = data.get("state", fan_status["state"])
+        fan_status["mode"] = data.get("mode", fan_status["mode"])
+        fan_status["speed"] = data.get("speed", fan_status["speed"])
+
+        return jsonify({"status": "updated", "fan": fan_status})
+
+    return jsonify(fan_status)
+
+
+# ---------------- START ----------------
 if __name__ == "__main__":
     app.run(debug=True)
