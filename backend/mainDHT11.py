@@ -73,7 +73,7 @@ SCHALTmin = 0.5 # minimaler Taupunktunterschied, bei dem das Relais schaltet
 HYSTERESE = 1.0 # Abstand von Ein- und Ausschaltpunkt
 a = 7.5
 b = 237.3
-	
+
 while True:
 	try:
 		
@@ -109,10 +109,10 @@ while True:
 		print(f'Sensor 2: Temperatur in Celsius={temperature_c_sensor2}ºC, Temperatur in Fahrenheit={temperature_f_sensor2}ºF, Luftfeuchtigkeit={humidity_sensor2}%')
 		
 		
-		if (humidity_sensor1 > humidity_sensor2):
+		"""if (humidity_sensor1 > humidity_sensor2):
 			GPIO.output(FAN_PIN, GPIO.LOW)
 		elif (humidity_sensor1 < humidity_sensor2):
-			GPIO.output(FAN_PIN, GPIO.HIGH)
+			GPIO.output(FAN_PIN, GPIO.HIGH)"""
 		
 		"""if (rotation == 0):
 			rotation = 1
@@ -123,6 +123,20 @@ while True:
 			if (DeltaPoint > (SCHALTmin + HYSTERESE)):
 				print('Hier Logik einfügen zum Fenster-öffnen')
 				break"""
+
+		if rotation == 0:
+    		DeltaPoint = CondensationPoint_sensor2 - CondensationPoint_sensor1
+    		if DeltaPoint > (SCHALTmin + HYSTERESE):
+        		print("open window")
+				GPIO.output(FAN_PIN, GPIO.LOW)
+        		rotation = 1
+		else:
+    		DeltaPoint = CondensationPoint_sensor2 - CondensationPoint_sensor1
+    		if DeltaPoint < (SCHALTmin - HYSTERESE):
+        		print("close window")
+				GPIO.output(FAN_PIN, GPIO.HIGH)
+        		rotation = 0	
+
 		
 		time.sleep(2.0)
 	except RuntimeError as error:
