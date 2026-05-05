@@ -1,229 +1,143 @@
 import time
-import board 
+import board
 import adafruit_dht
 import math
-#import mysql.connector as mariadb
-#import mariadb
+import mariadb
 import sys
 import os
 import RPi.GPIO as GPIO
 
+# ---------------- GPIO ----------------
+FAN_PIN = 21
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(FAN_PIN, GPIO.OUT)
+
+# ---------------- DB ----------------
+try:
+    conn = mariadb.connect(
+        user="delta",
+        password="delta",
+        host="10.231.81.129",
+        port=3306,
+        database="deltataupunkt"
+    )
+    cur = conn.cursor()
+    print("[DB] Connected")
+
+except mariadb.Error as e:
+    print(f"[DB ERROR] {e}")
+    sys.exit(1)
 
 
-def ensure_db_connection():
-    global conn, cur
+def log_to_database(temp_in, hum_in, temp_out, hum_out, fan_state):
     try:
-        conn.ping()
-    except:
-        print("[DB] Reconnecting...")
-        conn = mariadb.connect(
-            user="delta",
-            password="yourpassword",
-            host="localhost",
-            port=3306,
-            database="taupunkt"
-        )
-        cur = conn.cursor()
-
-def log_to_database(cur, conn,
-                    temp_in, hum_in,
-                    temp_out, hum_out):
-    """
-    Stores a synchronized snapshot with manual timestamp.
-    """
-
-    try:
-        current_time = time.strftime("%Y-%m-%d %H:%M:%S")
-
         sql = """
-        INSERT INTO sensor_data (
-            timestamp,
-            temp_inside,
-            hum_inside,
-            temp_outside,
-            hum_outside
+        INSERT INTO sensorwerte (
+            temp_innen,
+            temp_aussen,
+            hum_innen,
+            hum_aussen,
+            fan_state
         )
         VALUES (?, ?, ?, ?, ?)
         """
 
         values = (
-            current_time,
             temp_in,
-            hum_in,
             temp_out,
-            hum_out
+            hum_in,
+            hum_out,
+            fan_state
         )
 
         cur.execute(sql, values)
         conn.commit()
 
     except Exception as e:
-        print(f"[DB ERROR] {e}")
-
-"""if sql throws error, use this:
-sql = "
-INSERT INTO sensor_data (
-    timestamp,
-    temp_inside,
-    hum_inside,
-    temp_outside,
-    hum_outside
-)
-VALUES (%s, %s, %s, %s, %s)
-"
-"""
+        print(f"[DB INSERT ERROR] {e}")
 
 
-
-
-
-
-""" This is for the LED-Matrix
-import busio
-import digitalio
-
-spi = busio.SPI(clock=board.SCK, MOSI=board.MOSI)
-cs = digitalio.DigitalInOut(board.D7)
-cs.direction = digitalio.Direction.OUTPUT
-cs.value = True
-
-def write_reg(register, data):
-	cs.value = False
-	spi.write(bytes([register, data]))
-	cs.value = True
-	
-time.sleep(2)
-for i in range(1, 9):
-	write_reg(i, 0x00)
-
-time.sleep(2)
-for i in range(1, 257):
-	time.sleep(0.25)
-	write_reg(4, i)
-	
-time.sleep(2)
-
-for i in range(1, 9):
-	write_reg(i, 0x00)
-"""
-
-
-
-""" This is MariaDB Stuff
-try:
-    conn = mariadb.connect(
-        user="tauuser",
-        password="yourpassword",
-        host="localhost",   # or IP if DB is on another machine
-        port=3306,
-        database="taupunkt"
-    )
-
-    cur = conn.cursor()
-    print("Database connection successful")
-
-except mariadb.Error as e:
-    print(f"[DB ERROR] Connection failed: {e}")
-    sys.exit(1)
-"""
-
-
+# ---------------- SENSORS ----------------
 sensor1 = adafruit_dht.DHT22(board.D4)
 sensor2 = adafruit_dht.DHT22(board.D26)
 
-  
-
-FAN_PIN = 21
-GPIO.setup(FAN_PIN, GPIO.OUT)
-GPIO.setmode(GPIO.BCM)
-
-mGWD = 18.016 # Molekulargewicht des Wasserdampfes in kg/kmol
-AF = 8314.3 # Universelle Gaskonstante in J/(kmol*K)
+# ---------------- LOGIC ----------------
 rotation = 0
-CondensationPoint1 = 0
-CondensationPoint2 = 0
-DeltaPoint = 0
-SCHALTmin = 0.5 # minimaler Taupunktunterschied, bei dem das Relais schaltet
-HYSTERESE = 1.0 # Abstand von Ein- und Ausschaltpunkt
+SCHALTmin = 0.5
+HYSTERESE = 1.0
+
 a = 7.5
 b = 237.3
 
+
 while True:
-	try:
-		
-		temperature_c_sensor1 = sensor1.temperature
-		temperature_f_sensor1 = temperature_c_sensor1 * (9/5) + 32
-		temperature_k_sensor1 = temperature_c_sensor1 + 273.15
-		humidity_sensor1 = sensor1.humidity
-		           
-		SDD_sensor1 = 6.1078 * 10 ** ((a*temperature_c_sensor1) / (b+temperature_c_sensor1))
-		DD_sensor1 = (humidity_sensor1 / 100 * SDD_sensor1)
-		v_sensor1 = math.log10(DD_sensor1/6.1078) # Nur eine Variable für späteren Gebrauch
-		TD_sensor1 = b*v_sensor1/(a-v_sensor1)
-		CondensationPoint_sensor1 = TD_sensor1
-		SDDvonTD_sensor1 = 6.1078 * 10 ** ((a*TD_sensor1) / (b+TD_sensor1))
-		AWDF_sensor1 = 10**5 * mGWD / AF * SDDvonTD_sensor1 / temperature_k_sensor1 # Absolute Feuchte in g Wasserdampf pro m³ Luft
-		
-		
-		temperature_c_sensor2 = sensor2.temperature
-		temperature_f_sensor2 = temperature_c_sensor2 * (9/5) + 32
-		temperature_k_sensor2 = temperature_c_sensor2 + 273.15
-		humidity_sensor2 = sensor2.humidity
-		           
-		SDD_sensor2 = 6.1078 * 10 ** ((a*temperature_c_sensor2) / (b+temperature_c_sensor2))
-		DD_sensor2 = (humidity_sensor2 / 100 * SDD_sensor2)
-		v_sensor2 = math.log10(DD_sensor2/6.1078) # Nur eine Variable für späteren Gebrauch
-		TD_sensor2 = b*v_sensor2/(a-v_sensor2)
-		CondensationPoint_sensor2 = TD_sensor2
-		SDDvonTD_sensor2 = 6.1078 * 10 ** ((a*TD_sensor2) / (b+TD_sensor2))
-		AWDF_sensor2 = 10**5 * mGWD / AF * SDDvonTD_sensor2 / temperature_k_sensor2 # Absolute Feuchte in g Wasserdampf pro m³ Luft
-        
-		os.system('cls' if os.name == 'nt' else 'clear')
-		print(f'Sensor 1: Temperatur in Celsius={temperature_c_sensor1}ºC, Temperatur in Fahrenheit={temperature_f_sensor1}ºF, Luftfeuchtigkeit={humidity_sensor1}%')
-		print(f'Sensor 2: Temperatur in Celsius={temperature_c_sensor2}ºC, Temperatur in Fahrenheit={temperature_f_sensor2}ºF, Luftfeuchtigkeit={humidity_sensor2}%')
-		
-		
-		"""if (humidity_sensor1 > humidity_sensor2):
-			GPIO.output(FAN_PIN, GPIO.LOW)
-		elif (humidity_sensor1 < humidity_sensor2):
-			GPIO.output(FAN_PIN, GPIO.HIGH)"""
-		
-		"""if (rotation == 0):
-			rotation = 1
-			CondensationPoint_sensor2 = CondensationPoint_sensor1
-		else:
-			rotation = 0
-			DeltaPoint = CondensationPoint_sensor2 - CondensationPoint_sensor1
-			if (DeltaPoint > (SCHALTmin + HYSTERESE)):
-				print('Hier Logik einfügen zum Fenster-öffnen')
-				break"""
+    try:
+        # -------- SENSOR 1 --------
+        temperature_c_sensor1 = sensor1.temperature
+        humidity_sensor1 = sensor1.humidity
 
-		if rotation == 0:
-    		DeltaPoint = CondensationPoint_sensor2 - CondensationPoint_sensor1
-    		if DeltaPoint > (SCHALTmin + HYSTERESE):
-        		print("open window")
-				GPIO.output(FAN_PIN, GPIO.LOW)
-        		rotation = 1
-		else:
-    		DeltaPoint = CondensationPoint_sensor2 - CondensationPoint_sensor1
-    		if DeltaPoint < (SCHALTmin - HYSTERESE):
-        		print("close window")
-				GPIO.output(FAN_PIN, GPIO.HIGH)
-        		rotation = 0	
+        # -------- SENSOR 2 --------
+        temperature_c_sensor2 = sensor2.temperature
+        humidity_sensor2 = sensor2.humidity
 
-		""" Use this when mariadb is fixed
-		ensure_db_connection()
-		log_to_database(cur, conn, temperature_c_sensor1, humidity_sensor1, temperature_c_sensor2, humidity_sensor2)
-		"""
-		
-		time.sleep(2.0)
-	except RuntimeError as error:
-		print(error.args[0])
-		time.sleep(2.0)
-		continue
-	except Exception as error:
-		sensor1.exit()
-		sensor2.exit()
-		GPIO.output(FAN_PIN, GPIO.HIGH)
-		GPIO.cleanup()
-		raise error
+        # -------- TAUPUNKT SENSOR 1 --------
+        SDD_sensor1 = 6.1078 * 10 ** ((a * temperature_c_sensor1) / (b + temperature_c_sensor1))
+        DD_sensor1 = (humidity_sensor1 / 100 * SDD_sensor1)
+        v_sensor1 = math.log10(DD_sensor1 / 6.1078)
+        TD_sensor1 = b * v_sensor1 / (a - v_sensor1)
+
+        # -------- TAUPUNKT SENSOR 2 --------
+        SDD_sensor2 = 6.1078 * 10 ** ((a * temperature_c_sensor2) / (b + temperature_c_sensor2))
+        DD_sensor2 = (humidity_sensor2 / 100 * SDD_sensor2)
+        v_sensor2 = math.log10(DD_sensor2 / 6.1078)
+        TD_sensor2 = b * v_sensor2 / (a - v_sensor2)
+
+        # -------- FAN LOGIC (BLEIBT UNVERÄNDERT) --------
+        if rotation == 0:
+            DeltaPoint = TD_sensor2 - TD_sensor1
+            if DeltaPoint > (SCHALTmin + HYSTERESE):
+                print("open window")
+                GPIO.output(FAN_PIN, GPIO.LOW)
+                fan_state = "on"
+                rotation = 1
+            else:
+                fan_state = "off"
+
+        else:
+            DeltaPoint = TD_sensor2 - TD_sensor1
+            if DeltaPoint < (SCHALTmin - HYSTERESE):
+                print("close window")
+                GPIO.output(FAN_PIN, GPIO.HIGH)
+                fan_state = "off"
+                rotation = 0
+            else:
+                fan_state = "on"
+
+        # -------- OUTPUT --------
+        print(f"T1={temperature_c_sensor1}°C | H1={humidity_sensor1}%")
+        print(f"T2={temperature_c_sensor2}°C | H2={humidity_sensor2}%")
+        print(f"Fan: {fan_state}")
+        print("-" * 40)
+
+        # -------- DB WRITE --------
+        log_to_database(
+            temperature_c_sensor1,
+            humidity_sensor1,
+            temperature_c_sensor2,
+            humidity_sensor2,
+            fan_state
+        )
+
+        time.sleep(2)
+
+    except RuntimeError as error:
+        print(error.args[0])
+        time.sleep(2)
+        continue
+
+    except Exception as error:
+        sensor1.exit()
+        sensor2.exit()
+        GPIO.output(FAN_PIN, GPIO.HIGH)
+        GPIO.cleanup()
+        raise error
