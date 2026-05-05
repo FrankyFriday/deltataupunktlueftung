@@ -9,6 +9,75 @@ import os
 import RPi.GPIO as GPIO
 
 
+
+def ensure_db_connection():
+    global conn, cur
+    try:
+        conn.ping()
+    except:
+        print("[DB] Reconnecting...")
+        conn = mariadb.connect(
+            user="delta",
+            password="yourpassword",
+            host="localhost",
+            port=3306,
+            database="taupunkt"
+        )
+        cur = conn.cursor()
+
+def log_to_database(cur, conn,
+                    temp_in, hum_in,
+                    temp_out, hum_out):
+    """
+    Stores a synchronized snapshot with manual timestamp.
+    """
+
+    try:
+        current_time = time.strftime("%Y-%m-%d %H:%M:%S")
+
+        sql = """
+        INSERT INTO sensor_data (
+            timestamp,
+            temp_inside,
+            hum_inside,
+            temp_outside,
+            hum_outside
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """
+
+        values = (
+            current_time,
+            temp_in,
+            hum_in,
+            temp_out,
+            hum_out
+        )
+
+        cur.execute(sql, values)
+        conn.commit()
+
+    except Exception as e:
+        print(f"[DB ERROR] {e}")
+
+"""if sql throws error, use this:
+sql = "
+INSERT INTO sensor_data (
+    timestamp,
+    temp_inside,
+    hum_inside,
+    temp_outside,
+    hum_outside
+)
+VALUES (%s, %s, %s, %s, %s)
+"
+"""
+
+
+
+
+
+
 """ This is for the LED-Matrix
 import busio
 import digitalio
@@ -43,17 +112,22 @@ for i in range(1, 9):
 """ This is MariaDB Stuff
 try:
     conn = mariadb.connect(
-        user="db_user",
-        password="db_user_passwd",
-        host="192.0.2.1",
+        user="tauuser",
+        password="yourpassword",
+        host="localhost",   # or IP if DB is on another machine
         port=3306,
-        database="employees")
-except mariadb.Error as e:
-    print(f"Error connecting to MariaDB Platform: {e}")
-    sys.exit(1)
+        database="taupunkt"
+    )
 
-cur = conn.cursor()
+    cur = conn.cursor()
+    print("Database connection successful")
+
+except mariadb.Error as e:
+    print(f"[DB ERROR] Connection failed: {e}")
+    sys.exit(1)
 """
+
+
 sensor1 = adafruit_dht.DHT22(board.D4)
 sensor2 = adafruit_dht.DHT22(board.D26)
 
@@ -137,13 +211,15 @@ while True:
 				GPIO.output(FAN_PIN, GPIO.HIGH)
         		rotation = 0	
 
+		""" Use this when mariadb is fixed
+		ensure_db_connection()
+		log_to_database(cur, conn, temperature_c_sensor1, humidity_sensor1, temperature_c_sensor2, humidity_sensor2)
+		"""
 		
 		time.sleep(2.0)
 	except RuntimeError as error:
 		print(error.args[0])
 		time.sleep(2.0)
-		GPIO.output(FAN_PIN, GPIO.HIGH)
-		GPIO.cleanup()
 		continue
 	except Exception as error:
 		sensor1.exit()
