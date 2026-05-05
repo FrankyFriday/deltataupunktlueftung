@@ -1,22 +1,26 @@
 import os
 import requests
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import mysql.connector
 from mysql.connector import Error
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 load_dotenv()
 
-app = Flask(
-    __name__,
+app = Flask(__name__,
     template_folder="website/templates",
     static_folder="website/static"
 )
 
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
+# ---------------- DB CONFIG ----------------
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),
     "user": os.getenv("DB_USER"),
@@ -24,63 +28,65 @@ DB_CONFIG = {
     "database": os.getenv("DB_NAME")
 }
 
+# ---------------- SMTP CONFIG ----------------
+SMTP_SERVER = os.getenv("SMTP_SERVER")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+FROM_EMAIL = SMTP_USERNAME
 
-# ---------------- DB INIT ----------------
+
+# ---------------- INIT DB ----------------
 def init_db():
-    try:
-        db = mysql.connector.connect(
-            host=DB_CONFIG["host"],
-            user=DB_CONFIG["user"],
-            password=DB_CONFIG["password"]
+    db = mysql.connector.connect(
+        host=DB_CONFIG["host"],
+        user=DB_CONFIG["user"],
+        password=DB_CONFIG["password"]
+    )
+    cursor = db.cursor()
+
+    cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_CONFIG['database']}")
+    db.commit()
+    cursor.close()
+    db.close()
+
+    db = mysql.connector.connect(**DB_CONFIG)
+    cursor = db.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL
         )
-        cursor = db.cursor()
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_CONFIG['database']}")
-        db.commit()
-        cursor.close()
-        db.close()
+    """)
 
-        db = mysql.connector.connect(**DB_CONFIG)
-        cursor = db.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sensorwerte (
+            id INT AUTO_INCREMENT PRIMARY KEY,
 
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL
-            )
-        """)
+            temp_innen FLOAT,
+            temp_aussen FLOAT,
+            hum_innen FLOAT,
+            hum_aussen FLOAT,
 
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS sensorwerte (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                temp_innen FLOAT,
-                temp_aussen FLOAT,
-                hum_innen FLOAT,
-                hum_aussen FLOAT,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+            fan_state VARCHAR(10) DEFAULT 'off',
 
-        db.commit()
-        cursor.close()
-        db.close()
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-        print("DB bereit")
-
-    except Error as e:
-        print("DB Error:", e)
+    db.commit()
+    cursor.close()
+    db.close()
 
 
 init_db()
 
 
-# ---------------- DB CONNECTION ----------------
+# ---------------- DB ----------------
 def get_db():
-    try:
-        return mysql.connector.connect(**DB_CONFIG)
-    except Error as e:
-        print("DB error:", e)
-        return None
+    return mysql.connector.connect(**DB_CONFIG)
 
 
 # ---------------- LOGIN REQUIRED ----------------
@@ -93,13 +99,8 @@ def login_required(func):
     return wrapper
 
 
-# ---------------- FAN STATUS (RAM STORAGE) ----------------
-fan_status = {
-    "state": "off",
-    "mode": "manual",
-    "speed": 0
-}
 
+# ---------------- WEATHER ----------------
 weather_location = {
     "lat": 53.2311,
     "lon": 7.4653,
@@ -107,12 +108,79 @@ weather_location = {
 }
 
 
-# ---------------- AUTH ----------------
+# ---------------- EMAIL ----------------
+def send_registration_email(to_email, username):
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["From"] = FROM_EMAIL
+        msg["To"] = to_email
+        msg["Subject"] = "✔ Registrierung erfolgreich – Delta-Taupunktlüftung"
+
+        text = f"""
+Hallo {username},
+
+deine Registrierung war erfolgreich.
+
+Du kannst dich jetzt im System anmelden und dein Dashboard nutzen.
+
+Delta-Taupunktlüftung System
+"""
+
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; background:#f6f9fc; padding:20px;">
+            <div style="max-width:600px; margin:auto; background:white; padding:25px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1);">
+
+                <h2 style="color:#1fa4c9;">Willkommen, {username} 👋</h2>
+
+                <p>Deine Registrierung war erfolgreich.</p>
+
+                <p style="font-size:15px;">
+                    Du kannst dich jetzt im System anmelden und dein Dashboard nutzen.
+                </p>
+
+                <div style="margin:20px 0; padding:15px; background:#e8f7fb; border-left:4px solid #1fa4c9;">
+                    <b>Status:</b> Account erstellt<br>
+                    <b>System:</b> Delta-Taupunktlüftung
+                </div>
+
+                <p style="color:#555;">
+                    Viel Spaß mit deinem System 🚀
+                </p>
+
+                <hr style="border:none; border-top:1px solid #eee;">
+
+                <p style="font-size:12px; color:#999;">
+                    Diese E-Mail wurde automatisch generiert.
+                </p>
+
+            </div>
+        </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(text, "plain"))
+        msg.attach(MIMEText(html, "html"))
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+
+        print(f"E-Mail gesendet an {to_email}")
+
+    except Exception as e:
+        print("Email Fehler:", e)
+
+
+# ---------------- ROUTES ----------------
 @app.route("/")
 def root():
     return redirect(url_for("login"))
 
 
+# ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -136,31 +204,41 @@ def login():
     return render_template("login.html")
 
 
+# ---------------- LOGOUT ----------------
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
 
 
+# ---------------- REGISTER ----------------
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         username = request.form["username"]
+        email = request.form["email"]
         password = request.form["password"]
 
         db = get_db()
         cursor = db.cursor()
 
         try:
+            hashed = generate_password_hash(password)
+
             cursor.execute(
                 "INSERT INTO users (username, password) VALUES (%s, %s)",
-                (username, generate_password_hash(password))
+                (username, hashed)
             )
+
             db.commit()
+
+            send_registration_email(email, username)
+
+            flash("Registrierung erfolgreich")
             return redirect(url_for("login"))
 
         except Error:
-            flash("Fehler bei Registrierung")
+            flash("User existiert bereits")
 
         finally:
             cursor.close()
@@ -182,22 +260,54 @@ def sensoren():
     return render_template("sensoren.html")
 
 
-@app.route("/einstellungen")
+# ---------------- API SENSOR ----------------
+@app.route("/api/sensoren")
 @login_required
-def einstellungen():
-    return render_template("einstellungen.html")
+def api_sensoren():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT temp_innen, temp_aussen, hum_innen, hum_aussen, timestamp
+        FROM sensorwerte
+        ORDER BY timestamp DESC
+        LIMIT 500
+    """)
+
+    data = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return jsonify(data)
 
 
-@app.route("/verbindung")
+# ---------------- API FAN ----------------
+@app.route("/api/fan", methods=["GET"])
 @login_required
-def verbindung():
-    return render_template("verbindung.html")
+def api_fan():
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
 
+    cursor.execute("""
+        SELECT fan_state
+        FROM sensorwerte
+        ORDER BY timestamp DESC
+        LIMIT 1
+    """)
+
+    data = cursor.fetchone()
+
+    cursor.close()
+    db.close()
+
+    return jsonify(data or {"fan_state": "off"})
+
+
+# ---------------- API WEATHER ----------------
 @app.route("/api/weather")
 @login_required
 def api_weather():
-    global weather_location
-
     url = (
         f"https://api.open-meteo.com/v1/forecast"
         f"?latitude={weather_location['lat']}"
@@ -216,44 +326,6 @@ def api_weather():
     })
 
 
-# ---------------- SENSOR API ----------------
-@app.route("/api/sensoren")
-@login_required
-def api_sensoren():
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
-
-    cursor.execute("""
-        SELECT temp_innen, temp_aussen, hum_innen, hum_aussen, timestamp
-        FROM sensorwerte
-        ORDER BY timestamp DESC
-        LIMIT 20
-    """)
-
-    data = cursor.fetchall()
-
-    cursor.close()
-    db.close()
-
-    return jsonify(data)
-
-@app.route("/api/fan", methods=["GET", "POST"])
-@login_required
-def api_fan():
-    global fan_status
-
-    if request.method == "POST":
-        data = request.json
-
-        fan_status["state"] = data.get("state", fan_status["state"])
-        fan_status["mode"] = data.get("mode", fan_status["mode"])
-        fan_status["speed"] = data.get("speed", fan_status["speed"])
-
-        return jsonify({"status": "updated", "fan": fan_status})
-
-    return jsonify(fan_status)
-
-
 # ---------------- START ----------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

@@ -2,8 +2,11 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delta Dashboard</title>
+
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -12,68 +15,106 @@
     <div class="logo">Delta-Taupunktlüftung</div>
     <div>
         <a href="/index" class="active">Übersicht</a>
-        <a href="/sensoren">Sensoren</a>
         <a href="/logout">Logout</a>
     </div>
 </nav>
 
+<header class="top-banner">
+
+    <div class="banner-left">
+        <img src="{{ url_for('static', filename='img/buenting.svg') }}" alt="Logo 1">
+        <img src="{{ url_for('static', filename='img/joypi.png') }}" alt="Logo 2">
+        <img src="{{ url_for('static', filename='img/orgadata.svg') }}" alt="Logo 3">
+    </div>
+
+    <div class="banner-center">
+        <h1>Dashboard Übersicht</h1>
+        <p>Live Klima- & Lüftungsdaten</p>
+    </div>
+
+</header>
+
 <div class="container">
-    
-<section class="card weather-card">
 
-    <h2>🌦️ Wetter in <span id="weather_city">Leer</span></h2>
+    <section class="card status">
+        <h2>🧠 Empfehlung</h2>
+        <p id="ventilation_status">Lade...</p>
+    </section>
 
-    <div class="weather-box">
-        🌡️ <b id="weather_temp">--</b> °C
-    </div>
+    <section class="card">
+        <h2>📅 Zeitraum</h2>
 
-    <div class="weather-box">
-        💨 <b id="weather_wind">--</b> km/h
-    </div>
+        <div class="filter-bar">
+            <label>Von:</label>
+            <input type="datetime-local" id="fromTime">
 
-    <div class="weather-box">
-        ⏱️ <b id="weather_time">--</b>
-    </div>
+            <label>Bis:</label>
+            <input type="datetime-local" id="toTime">
 
-</section>
+            <button onclick="applyFilter()">Filtern</button>
+            <button onclick="resetFilter()">Reset</button>
+        </div>
+    </section>
 
-<section class="card weather-card">
+    <section class="card">
+        <h2>🌡️ Klimadaten</h2>
 
-    <h2>🌦️ Wetter in <span id="weather_city">Leer</span></h2>
+        <table class="climate-table">
+            <thead>
+                <tr>
+                    <th>Wert</th>
+                    <th>Innen</th>
+                    <th>Außen</th>
+                </tr>
+            </thead>
 
-    <div class="weather-grid">
+            <tbody>
+                <tr>
+                    <td>Temperatur</td>
+                    <td><b id="temp_in">--</b> °C</td>
+                    <td><b id="temp_out">--</b> °C</td>
+                </tr>
 
-        <div class="weather-box">
-            <div class="weather-icon">🌡️</div>
-            <div>
-                <div class="weather-label">Temperatur</div>
-                <div class="weather-value"><span id="weather_temp">--</span> °C</div>
-            </div>
+                <tr>
+                    <td>Luftfeuchte</td>
+                    <td><b id="hum_in">--</b> %</td>
+                    <td><b id="hum_out">--</b> %</td>
+                </tr>
+
+                <tr>
+                    <td>Taupunkt</td>
+                    <td><b id="dew_in">--</b> °C</td>
+                    <td><b id="dew_out">--</b> °C</td>
+                </tr>
+
+                <tr>
+                    <td>Update</td>
+                    <td colspan="2"><b id="timestamp">--</b></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="card">
+        <h2>🌀 Lüfter</h2>
+
+        <div class="fan-grid">
+            <div>Status: <b id="fan_state">--</b></div>
+            <div>Mode: <b id="fan_mode">--</b></div>
+            <div>Speed: <b id="fan_speed">--</b>%</div>
         </div>
 
-        <div class="weather-box">
-            <div class="weather-icon">💨</div>
-            <div>
-                <div class="weather-label">Wind</div>
-                <div class="weather-value"><span id="weather_wind">--</span> km/h</div>
-            </div>
-        </div>
+    </section>
 
-        <div class="weather-box">
-            <div class="weather-icon">⏱️</div>
-            <div>
-                <div class="weather-label">Zeit</div>
-                <div class="weather-value"><span id="weather_time">--</span></div>
-            </div>
-        </div>
-
-    </div>
-
-</section>
+    <section class="card">
+        <h2>📈 Temperatur Verlauf</h2>
+        <canvas id="tempChart"></canvas>
+    </section>
 
 </div>
 
-<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<footer>© 2026 Delta-Taupunktlüftung</footer>
 
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
-</html>s
+</html>

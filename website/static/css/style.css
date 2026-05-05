@@ -1,306 +1,253 @@
 :root {
-    --bg: #f9fbfc; /* noch heller & weicher */
+    --bg: #eef3f8;
     --card: #ffffff;
-    --text: #18202c; /* etwas dunkler für besseren Kontrast */
+    --text: #18202c;
+    --muted: #6b7785;
+
     --accent: #1fa4c9;
-    --accent-light: #c7f3ff;
-    --shadow-light: rgba(31, 164, 201, 0.15);
-    --shadow-medium: rgba(0, 0, 0, 0.1);
-    --shadow-strong: rgba(31, 164, 201, 0.3);
+    --accent-dark: #168aa6;
+
+    --good: #e8fff2;
+    --bad: #ffe7e7;
+
+    --shadow: rgba(0,0,0,0.08);
 }
 
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-}
-
+/* ---------------- BODY ---------------- */
 body {
     margin: 0;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: system-ui, Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    min-height: 100vh;
 }
 
-/* NAVBAR */
+/* ---------------- NAVBAR ---------------- */
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2.5rem;
-    background: rgba(255 255 255 / 0.9);
-    backdrop-filter: saturate(180%) blur(15px);
-    border-bottom: 1px solid #d9e2ec;
+
+    padding: 1rem 2rem;
+    background: white;
+    border-bottom: 1px solid #e6e6e6;
+
     position: sticky;
     top: 0;
-    z-index: 100;
-    box-shadow: 0 4px 14px var(--shadow-light);
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    transition: background-color 0.3s ease;
+    z-index: 1000;
+}
+
+.navbar .logo {
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 0.3px;
 }
 
 .navbar a {
-    color: var(--text);
+    margin-left: 1rem;
     text-decoration: none;
-    margin: 0 1.25rem;
+    color: var(--text);
     font-weight: 600;
-    font-size: 1.05rem;
-    padding: 0.3rem 0;
-    border-bottom: 3px solid transparent;
-    transition: color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
-}
-
-.navbar a:hover,
-.navbar a.active {
-    color: var(--accent);
-    border-color: var(--accent);
-    transform: translateY(-4px);
-}
-
-/* CONTAINER */
-.container {
-    padding: 2.5rem 1.5rem;
-    max-width: 1024px;
-    margin: 4rem auto 5rem;
-}
-
-/* CARD */
-.card {
-    background: var(--card);
-    border-radius: 24px;
-    padding: 3rem 3.5rem;
-    margin-bottom: 3.5rem;
-    box-shadow: 0 18px 38px var(--shadow-medium);
-    transition: transform 0.35s ease, box-shadow 0.35s ease;
-}
-
-.card:hover {
-    transform: translateY(-12px);
-    box-shadow: 0 25px 55px var(--shadow-strong);
-}
-
-/* CENTER TEXT */
-.center {
-    text-align: center;
-}
-
-/* GAUGE */
-.gauge {
-    width: 240px;
-    height: 240px;
-    margin: 3.5rem auto 2.5rem;
-    border-radius: 50%;
-    border: 14px solid var(--accent-light);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(150deg, #ffffff, #d7f3ff);
-    box-shadow:
-        inset 0 0 25px rgba(0, 0, 0, 0.08),
-        0 0 50px var(--accent);
-    animation: glowPulse 3.8s infinite ease-in-out;
-    transition: box-shadow 0.4s ease;
-    cursor: default;
-}
-
-.gauge:hover {
-    box-shadow:
-        inset 0 0 32px rgba(0, 0, 0, 0.12),
-        0 0 65px var(--accent);
-}
-
-.gauge-value {
-    font-size: 3.4rem;
-    font-weight: 900;
-    color: var(--accent);
-    text-shadow: 0 0 14px var(--accent-light);
-    user-select: none;
-}
-
-/* KEYFRAME ANIMATION */
-@keyframes glowPulse {
-    0%, 100% {
-        box-shadow:
-            inset 0 0 25px rgba(0, 0, 0, 0.08),
-            0 0 30px var(--accent);
-    }
-    50% {
-        box-shadow:
-            inset 0 0 32px rgba(0, 0, 0, 0.12),
-            0 0 60px var(--accent);
-    }
-}
-
-/* LISTEN */
-ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-li {
-    padding: 0.85rem 0;
-    font-size: 1.2rem;
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid #e0e7ef;
-    transition: background-color 0.25s ease;
-    cursor: default;
-    border-radius: 4px;
-}
-
-li:hover {
-    background-color: var(--accent-light);
-    border-color: var(--accent-light);
-}
-
-li span {
-    font-weight: 700;
-    color: var(--accent);
-}
-
-/* FOOTER */
-footer {
-    text-align: center;
-    padding: 2.5rem 1.5rem;
-    color: #666;
-    font-size: 0.95rem;
-    border-top: 1px solid #e2e8f0;
-    user-select: none;
-    font-weight: 500;
-}
-
-/* RESPONSIVE */
-@media (max-width: 640px) {
-    .navbar {
-        flex-direction: column;
-        padding: 1rem 1rem 1.5rem;
-    }
-
-    .navbar a {
-        margin: 0.5rem 1rem;
-        font-size: 1rem;
-    }
-
-    .container {
-        padding: 1.5rem 1rem 2.5rem;
-        margin: 2rem auto 4rem;
-    }
-
-    .card {
-        padding: 2rem 2rem;
-        margin-bottom: 2.5rem;
-    }
-
-    .gauge {
-        width: 190px;
-        height: 190px;
-        border-width: 10px;
-        margin: 2rem auto 2rem;
-    }
-
-    .gauge-value {
-        font-size: 2.6rem;
-    }
-}
-
-
-/* SENSOR TABLE */
-.sensor-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-    border-radius: 16px;
-    overflow: hidden;
-    background: var(--card);
-    box-shadow: 0 18px 38px var(--shadow-medium);
-}
-
-.sensor-table thead {
-    background: linear-gradient(90deg, var(--accent), #4dd6ff);
-    color: white;
-}
-
-.sensor-table th,
-.sensor-table td {
-    padding: 1rem;
-    text-align: left;
-}
-
-.sensor-table tbody tr:hover {
-    background: var(--accent-light);
     transition: 0.2s;
 }
 
-/* FAN GRID */
+.navbar a:hover {
+    color: var(--accent);
+}
+
+/* ---------------- HEADER / BANNER ---------------- */
+.top-banner {
+    max-width: 1000px;
+    margin: 1.5rem auto;
+
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+
+    background: white;
+    padding: 1.5rem;
+    border-radius: 18px;
+    box-shadow: 0 10px 25px var(--shadow);
+}
+
+/* LINKS: LOGO SPALTE */
+.banner-left {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.banner-left img {
+    width: 85px;
+    padding: 6px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    transition: 0.2s;
+}
+
+.banner-left img:hover {
+    transform: scale(1.05);
+}
+
+/* TEXT */
+.banner-center {
+    flex: 1;
+}
+
+.banner-center h1 {
+    margin: 0;
+    font-size: 1.7rem;
+}
+
+.banner-center p {
+    margin: 6px 0 0;
+    color: var(--muted);
+}
+
+/* ---------------- CONTAINER ---------------- */
+.container {
+    max-width: 1000px;
+    margin: auto;
+    padding: 1rem 2rem 2rem;
+}
+
+/* ---------------- CARD ---------------- */
+.card {
+    background: var(--card);
+    padding: 1.8rem;
+    border-radius: 18px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 25px var(--shadow);
+    transition: 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* STATUS */
+.status {
+    text-align: center;
+}
+
+#ventilation_status {
+    font-size: 1.6rem;
+    font-weight: 800;
+}
+
+/* GOOD / BAD STATES */
+.good {
+    background: var(--good);
+}
+
+.bad {
+    background: var(--bad);
+}
+
+/* ---------------- TABLE ---------------- */
+.climate-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.climate-table th {
+    background: var(--accent);
+    color: white;
+    padding: 1rem;
+}
+
+.climate-table td {
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.climate-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+}
+
+/* ---------------- FILTER ---------------- */
+.filter-bar {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-bar input {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+}
+
+.filter-bar button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.filter-bar button:hover {
+    background: var(--accent-dark);
+}
+
+/* ---------------- FAN ---------------- */
 .fan-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
-    margin-top: 1rem;
 }
 
 .fan-grid div {
-    background: var(--accent-light);
+    background: #e9f8ff;
     padding: 1rem;
-    border-radius: 14px;
     text-align: center;
+    border-radius: 12px;
     font-weight: 600;
 }
 
-
-.weather-card {
-    background: linear-gradient(135deg, #ffffff, #f3fbff);
-    border-radius: 24px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
-    padding: 2.5rem;
+/* BUTTONS */
+.buttons button {
+    margin-right: 0.5rem;
+    padding: 0.7rem 1.2rem;
+    border: none;
+    background: var(--accent);
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-.weather-card h2 {
-    margin-bottom: 1.5rem;
-    font-weight: 700;
+.buttons button:hover {
+    background: var(--accent-dark);
 }
 
-.weather-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1.2rem;
+/* ---------------- FOOTER ---------------- */
+footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
 }
 
-.weather-box {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+/* ---------------- MOBILE ---------------- */
+@media (max-width: 768px) {
+    .top-banner {
+        flex-direction: column;
+        text-align: center;
+    }
 
-    background: rgba(255,255,255,0.8);
-    border: 1px solid #e6f2f8;
-    border-radius: 16px;
-    padding: 1.2rem;
+    .banner-left {
+        flex-direction: row;
+        justify-content: center;
+    }
 
-    transition: 0.3s ease;
-}
-
-.weather-box:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-}
-
-.weather-icon {
-    font-size: 2rem;
-}
-
-.weather-label {
-    font-size: 0.85rem;
-    color: #777;
-}
-
-.weather-value {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--accent);
+    .fan-grid {
+        grid-template-columns: 1fr;
+    }
 }
