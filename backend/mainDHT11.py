@@ -7,10 +7,26 @@ import sys
 import os
 import RPi.GPIO as GPIO
 
+import busio
+import adafruit_character_lcd.character_lcd_i2c as character_lcd
+
 # ---------------- GPIO ----------------
 FAN_PIN = 21
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(FAN_PIN, GPIO.OUT)
+
+# ---------------- LCD ----------------
+lcd_columns = 16
+lcd_rows = 2
+
+i2c = busio.I2C(board.SCL, board.SDA)
+lcd = character_lcd.Character_LCD_I2C(i2c, lcd_columns, lcd_rows)
+
+lcd.backlight = True
+lcd.clear()
+lcd.message = "System startet"
+time.sleep(2)
+lcd.clear()
 
 # ---------------- DB ----------------
 try:
@@ -72,11 +88,11 @@ b = 237.3
 
 while True:
     try:
-        # -------- SENSOR 1 --------
+        # -------- SENSOR 1 (INNEN) --------
         temperature_c_sensor1 = sensor1.temperature
         humidity_sensor1 = sensor1.humidity
 
-        # -------- SENSOR 2 --------
+        # -------- SENSOR 2 (AUSSEN) --------
         temperature_c_sensor2 = sensor2.temperature
         humidity_sensor2 = sensor2.humidity
 
@@ -92,7 +108,7 @@ while True:
         v_sensor2 = math.log10(DD_sensor2 / 6.1078)
         TD_sensor2 = b * v_sensor2 / (a - v_sensor2)
 
-        # -------- FAN LOGIC (BLEIBT UNVERÄNDERT) --------
+        # -------- FAN LOGIC --------
         if rotation == 0:
             DeltaPoint = TD_sensor2 - TD_sensor1
             if DeltaPoint > (SCHALTmin + HYSTERESE):
@@ -102,7 +118,6 @@ while True:
                 rotation = 1
             else:
                 fan_state = "off"
-
         else:
             DeltaPoint = TD_sensor2 - TD_sensor1
             if DeltaPoint < (SCHALTmin - HYSTERESE):
@@ -113,11 +128,21 @@ while True:
             else:
                 fan_state = "on"
 
-        # -------- OUTPUT --------
-        print(f"T1={temperature_c_sensor1}°C | H1={humidity_sensor1}%")
-        print(f"T2={temperature_c_sensor2}°C | H2={humidity_sensor2}%")
+        # -------- CONSOLE OUTPUT --------
+        print(f"T1={temperature_c_sensor1:.1f}°C | H1={humidity_sensor1}%")
+        print(f"T2={temperature_c_sensor2:.1f}°C | H2={humidity_sensor2}%")
         print(f"Fan: {fan_state}")
         print("-" * 40)
+
+        # -------- LCD OUTPUT --------
+        try:
+            lcd.clear()
+            lcd.message = (
+                f"I:{temperature_c_sensor1:.1f}C {humidity_sensor1:.0f}%\n"
+                f"A:{temperature_c_sensor2:.1f}C {humidity_sensor2:.0f}%"
+            )
+        except Exception as e:
+            print(f"[LCD ERROR] {e}")
 
         # -------- DB WRITE --------
         log_to_database(
@@ -140,4 +165,6 @@ while True:
         sensor2.exit()
         GPIO.output(FAN_PIN, GPIO.HIGH)
         GPIO.cleanup()
+        lcd.clear()
+        lcd.backlight = False
         raise error
