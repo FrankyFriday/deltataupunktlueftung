@@ -200,7 +200,7 @@ body {
 /* ---------------- FAN ---------------- */
 .fan-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
 }
 
@@ -250,4 +250,148 @@ footer {
     .fan-grid {
         grid-template-columns: 1fr;
     }
+
+    .navbar div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}
+
+/* ---------------- OVERRIDE STATUS ---------------- */
+.status-badge {
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+}
+
+.status-badge.active {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.status-badge.inactive {
+    background: var(--good);
+    border-left: 4px solid #28a745;
+}
+
+.status-badge.error {
+    background: var(--bad);
+    border-left: 4px solid #dc3545;
+}
+
+/* ---------------- OVERRIDE BUTTONS ---------------- */
+.override-controls .buttons {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.override-controls .btn-on {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.2rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.override-controls .btn-on:hover {
+    background: #218838;
+}
+
+.override-controls .btn-off {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.2rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.override-controls .btn-off:hover {
+    background: #c82333;
+}
+
+.override-controls .btn-cancel {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.2rem;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.override-controls .btn-cancel:hover {
+    background: #5a6268;
+}
+
+/* ---------------- CONTROL ROW ---------------- */
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+/* ---------------- ALERT ITEMS ---------------- */
+.alert-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    background: #fff3cd;
+    border-radius: 10px;
+    border-left: 4px solid #ffc107;
+}
+
+.alert-item button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* ---------------- ENERGIE GRID ---------------- */
+.energie-grid {
+    margin-top: 0.5rem;
+}
+
+/* ---------------- SENSOR TABLE ---------------- */
+.sensor-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.sensor-table th {
+    background: var(--accent);
+    color: white;
+    padding: 0.8rem;
+}
+
+.sensor-table td {
+    padding: 0.6rem 0.8rem;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+/* ---------------- NAVBAR ACTIVE ---------------- */
+.navbar a.active {
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 2px;
 }
