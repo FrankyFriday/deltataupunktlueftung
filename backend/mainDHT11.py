@@ -6,6 +6,8 @@ import mariadb
 import sys
 import os
 import RPi.GPIO as GPIO
+import busio
+from adafruit_ht16k33.segments import Seg7x4
 
 import busio
 import adafruit_character_lcd.character_lcd_i2c as character_lcd
@@ -20,13 +22,26 @@ lcd_columns = 16
 lcd_rows = 2
 
 i2c = busio.I2C(board.SCL, board.SDA)
-lcd = character_lcd.Character_LCD_I2C(i2c, lcd_columns, lcd_rows)
+lcd = character_lcd.Character_LCD_I2C(i2c, lcd_columns, lcd_rows, address=0x21)
 
 lcd.backlight = True
 lcd.clear()
 lcd.message = "System startet"
 time.sleep(2)
 lcd.clear()
+
+# ---------------- Delta Display -----
+
+display = Seg7x4(i2c)
+
+def show_delta(delta):
+	try:
+		display.fill(0) # löschen
+		display.print(f"{delta:4.1f}")
+		display.show()
+	except Exception as e:
+		print("[7SEG ERROR]", e)
+
 
 # ---------------- DB ----------------
 try:
@@ -111,7 +126,8 @@ while True:
         # -------- FAN LOGIC --------
         if rotation == 0:
             DeltaPoint = TD_sensor2 - TD_sensor1
-            if DeltaPoint < (SCHALTmin + HYSTERESE):
+            show_delta(DeltaPoint)
+            if DeltaPoint < (SCHALTmin - HYSTERESE):
                 print("open window")
                 GPIO.output(FAN_PIN, GPIO.LOW)
                 fan_state = "on"
@@ -120,7 +136,8 @@ while True:
                 fan_state = "off"
         else:
             DeltaPoint = TD_sensor2 - TD_sensor1
-            if DeltaPoint > (SCHALTmin - HYSTERESE):
+            show_delta(DeltaPoint)
+            if DeltaPoint > (SCHALTmin + HYSTERESE):
                 print("close window")
                 GPIO.output(FAN_PIN, GPIO.HIGH)
                 fan_state = "off"
