@@ -111,7 +111,7 @@ while True:
         # -------- FAN LOGIC --------
         if rotation == 0:
             DeltaPoint = TD_sensor2 - TD_sensor1
-            if DeltaPoint > (SCHALTmin + HYSTERESE):
+            if DeltaPoint < (SCHALTmin + HYSTERESE):
                 print("open window")
                 GPIO.output(FAN_PIN, GPIO.LOW)
                 fan_state = "on"
@@ -120,7 +120,7 @@ while True:
                 fan_state = "off"
         else:
             DeltaPoint = TD_sensor2 - TD_sensor1
-            if DeltaPoint < (SCHALTmin - HYSTERESE):
+            if DeltaPoint > (SCHALTmin - HYSTERESE):
                 print("close window")
                 GPIO.output(FAN_PIN, GPIO.HIGH)
                 fan_state = "off"
